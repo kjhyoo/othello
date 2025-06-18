@@ -1,99 +1,74 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Othello</title>
-  <style>
-    table { border-collapse: collapse; }
-    td {
-      width: 50px; height: 50px;
-      border: 1px solid #444;
-      text-align: center;
-      font-size: 24px;
-    }
-    .black { background-color: black; border-radius: 50%; width: 40px; height: 40px; margin: auto; }
-    .white { background-color: white; border-radius: 50%; width: 40px; height: 40px; margin: auto; }
-    .board {
-      background-color: #228B22; /* 진한 초록색 */
-      border: 2px solid #333;
-      display: grid;
-      grid-template-columns: repeat(8, 40px);
-      grid-template-rows: repeat(8, 40px);
-      gap: 2px;
-    }
-    .cell {
-      width: 40px;
-      height: 40px;
-      background-color: #228B22; /* 셀도 초록색 */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      border: 1px solid #333;
-    }
-    .stone.black {
-      background: black;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-    }
-    .stone.white {
-      background: white;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      border: 2px solid #333; /* 흰돌 테두리 추가 */
-    }
-  </style>
-</head>
-<body>
-  <h1>Othello Game</h1>
-  <p id="player-turn"></p>
-  <table id="board"></table>
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
+import copy
 
-  <script>
-    const boardEl = document.getElementById('board');
-    const playerTurnEl = document.getElementById('player-turn');
-    const apiBase = "https://othello-o36e.onrender.com";
+app = FastAPI()
 
-    function renderBoard(board, currentPlayer) {
-      boardEl.innerHTML = '';
-      playerTurnEl.textContent = `Current Player: ${currentPlayer === 1 ? "Black" : "White"}`;
-      for (let r = 0; r < 8; r++) {
-        const row = document.createElement('tr');
-        for (let c = 0; c < 8; c++) {
-          const cell = document.createElement('td');
-          if (board[r][c] === 1) {
-            const piece = document.createElement('div');
-            piece.className = 'black';
-            cell.appendChild(piece);
-          } else if (board[r][c] === 2) {
-            const piece = document.createElement('div');
-            piece.className = 'white';
-            cell.appendChild(piece);
-          }
-          cell.onclick = () => makeMove(r, c);
-          row.appendChild(cell);
-        }
-        boardEl.appendChild(row);
-      }
-    }
+# CORS 설정 (프론트엔드에서 요청 허용)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    async function fetchState() {
-      const res = await fetch(`${apiBase}/state`);
-      const data = await res.json();
-      renderBoard(data.board, data.current_player);
-    }
+# 오델로 보드 초기화
+EMPTY, BLACK, WHITE = 0, 1, 2
+DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1),
+              (0, -1),          (0, 1),
+              (1, -1), (1, 0),  (1, 1)]
 
-    async function makeMove(row, col) {
-      const res = await fetch(`${apiBase}/move?row=${row}&col=${col}`, { method: 'POST' });
-      const data = await res.json();
-      if (!data.valid) {
-        alert(data.message);
-      }
-      fetchState();
-    }
+def initial_board():
+    board = [[EMPTY] * 8 for _ in range(8)]
+    board[3][3], board[4][4] = WHITE, WHITE
+    board[3][4], board[4][3] = BLACK, BLACK
+    return board
 
-    fetchState();
-  </script>
-</body>
-</html>
+game_state = {
+    "board": initial_board(),
+    "current_player": BLACK
+}
+
+def is_valid_move(board, row, col, player):
+    if board[row][col] != EMPTY:
+        return False
+    opponent = WHITE if player == BLACK else BLACK
+    for dr, dc in DIRECTIONS:
+        r, c = row + dr, col + dc
+        flipped = False
+        while 0 <= r < 8 and 0 <= c < 8 and board[r][c] == opponent:
+            r += dr
+            c += dc
+            flipped = True
+        if flipped and 0 <= r < 8 and 0 <= c < 8 and board[r][c] == player:
+            return True
+    return False
+
+def apply_move(board, row, col, player):
+    opponent = WHITE if player == BLACK else BLACK
+    board[row][col] = player
+    for dr, dc in DIRECTIONS:
+        r, c = row + dr, col + dc
+        to_flip = []
+        while 0 <= r < 8 and 0 <= c < 8 and board[r][c] == opponent:
+            to_flip.append((r, c))
+            r += dr
+            c += dc
+        if to_flip and 0 <= r < 8 and 0 <= c < 8 and board[r][c] == player:
+            for r2, c2 in to_flip:
+                board[r2][c2] = player
+
+@app.get("/state")
+def get_state():
+    return game_state
+
+@app.post("/move")
+def make_move(row: int, col: int):
+    board = game_state["board"]
+    player = game_state["current_player"]
+    if not is_valid_move(board, row, col, player):
+        return {"valid": False, "message": "Invalid move"}
+    apply_move(board, row, col, player)
+    game_state["current_player"] = WHITE if player == BLACK else BLACK
+    return {"valid": True, "board": game_state["board"], "current_player": game_state["current_player"]}
