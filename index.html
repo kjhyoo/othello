@@ -3,6 +3,9 @@
 <head>
   <title>Othello</title>
   <style>
+    body {
+      background-color: #228B22; /* 진한 초록색 */
+    }
     table { border-collapse: collapse; }
     td {
       width: 50px; height: 50px;
@@ -11,38 +14,7 @@
       font-size: 24px;
     }
     .black { background-color: black; border-radius: 50%; width: 40px; height: 40px; margin: auto; }
-    .white { background-color: white; border-radius: 50%; width: 40px; height: 40px; margin: auto; }
-    .board {
-      background-color: #228B22; /* 진한 초록색 */
-      border: 2px solid #333;
-      display: grid;
-      grid-template-columns: repeat(8, 40px);
-      grid-template-rows: repeat(8, 40px);
-      gap: 2px;
-    }
-    .cell {
-      width: 40px;
-      height: 40px;
-      background-color: #228B22; /* 셀도 초록색 */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      border: 1px solid #333;
-    }
-    .stone.black {
-      background: black;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-    }
-    .stone.white {
-      background: white;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      border: 2px solid #333; /* 흰돌 테두리 추가 */
-    }
+    .white { background-color: white; border-radius: 50%; width: 40px; height: 40px; margin: auto; border: 2px solid #333; }
   </style>
 </head>
 <body>
