@@ -77,6 +77,18 @@
     #reset-button:hover {
       background-color: #da190b;
     }
+    
+    #temp-message {
+      color: #f44336;
+      font-weight: bold;
+      margin-left: 10px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    #temp-message.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -84,6 +96,7 @@
   <p id="player-turn"></p>
   <p id="piece-count"></p>
   <button id="pass-button" onclick="passTurn()">무르기</button>
+  <span id="temp-message"></span>
   <table id="board"></table>
   <button id="reset-button" onclick="resetGame()">게임 초기화</button>
 
@@ -91,8 +104,18 @@
     const boardEl = document.getElementById('board');
     const playerTurnEl = document.getElementById('player-turn');
     const pieceCountEl = document.getElementById('piece-count');
+    const tempMessageEl = document.getElementById('temp-message');
     //const apiBase = "https://othello-o36e.onrender.com";
     const apiBase = "http://localhost:8001";
+
+    function showTempMessage(message, duration = 2000) {
+      tempMessageEl.textContent = message;
+      tempMessageEl.classList.add('show');
+      
+      setTimeout(() => {
+        tempMessageEl.classList.remove('show');
+      }, duration);
+    }
 
     function renderBoard(data) {
       boardEl.innerHTML = '';
@@ -144,7 +167,7 @@
       const res = await fetch(`${apiBase}/move?row=${row}&col=${col}`, { method: 'POST' });
       const data = await res.json();
       if (!data.valid) {
-        alert(data.message);
+        showTempMessage(data.message);
       } else if (data.message) {
         // 턴 넘기기나 게임 종료 메시지 표시
         if (data.game_over) {

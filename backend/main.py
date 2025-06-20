@@ -173,7 +173,7 @@ def make_move(row: int, col: int):
     board = game_state["board"]
     player = game_state["current_player"]
     if not is_valid_move(board, row, col, player):
-        return {"valid": False, "message": "Invalid move"}
+        return {"valid": False, "message": "놓을 수 없는 위치입니다."}
     
     # 수를 적용한 후의 상태를 히스토리에 저장
     apply_move(board, row, col, player)
